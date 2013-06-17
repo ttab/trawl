@@ -11,9 +11,9 @@ path = require 'path'
 program
 .version(pckage.version)
 .usage('[options] <url>')
-.option('-r, --recent [num]', 'Number of recent posts [100]', Number, 100)
-.option('-n, --nth [num]', 'After recent posts, grab every nth post [10]', Number, 10)
-.option('-m, --max [num]', 'Maximum number of posts to scan [3000]', Number, 3000)
+.option('-r, --recent [num]', 'Number of recent posts [50]', Number, 50)
+.option('-n, --nth [num]', 'After recent posts, grab every nth post [500]', Number, 500)
+.option('-m, --max [num]', 'Maximum number of posts to scan, 0 for all [0]', Number, 0)
 .parse(process.argv)
 
 if program.args.length != 1
@@ -81,7 +81,7 @@ trawl = ->
             (es.exec '_search/scroll', {scroll:'1m',size:SIZE,scroll_id:scrollId}, null)
             .then (res) ->
                 bag res.hits.hits
-                if bar.curr < program.max
+                if bar.curr < total
                     scroll res._scroll_id
                 else
                     dumpWs.end()
