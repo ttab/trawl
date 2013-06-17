@@ -28,6 +28,18 @@ if not host.path.match /\/.+?\/.+?/
     program.outputHelp()
     process.exit(1)
 
+confmsg = []
+confmsg.push 'Dumping'
+confmsg.push program.recent
+confmsg.push 'most recent entries.'
+confmsg.push 'After that every'
+confmsg.push program.nth + 'th.'
+if program.max
+    confmsg.push 'Maximum'
+    confmsg.push program.max
+console.log confmsg...
+
+
 es = new ESLight host
 
 # mkdir -p
