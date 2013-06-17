@@ -6,7 +6,8 @@
     "eslight": "*",
     "bog": "0.0.4",
     "commander": "1.2.0",
-    "progress": "~0.1.0"
+    "progress": "~0.1.0",
+    "archiver": "~0.4.4"
   },
   "private": true
 }
