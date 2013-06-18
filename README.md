@@ -41,9 +41,10 @@ $ mvn deploy
 Uploaded: http://spix-core01.driften.net/nexus/content/repositories/snapshots/se/prb/scanpix-trawl/1.0.0-SNAPSHOT/scanpix-trawl-1.0.0-20130618.064742-3-dist.zip (259148 KB at 7650.1 KB/sec)
 ```
 
-*Notice that pom.xml got a hard coded value for the .zip to deploy to nexus*
+*Notice that pom.xml got a hard coded value for the .zip-file and classifier to deploy to nexus*
 
 ```
-spix-dev01$ grep images_sgb pom.xml
+princess$ grep images_sgb pom.xml
                 <file>target/images_sgb.zip</file>
+                <classifier>images_sgb</classifier>
 ```

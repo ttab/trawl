@@ -38,7 +38,7 @@
               <artifact>
                 <file>target/images_sgb.zip</file>
                 <type>zip</type>
-                <classifier>dist</classifier>
+                <classifier>images_sgb</classifier>
               </artifact>
             </artifacts>
           </configuration>
@@ -47,5 +47,5 @@
     </plugin>
   </plugins>
   </build>
- 
+
 </project>
