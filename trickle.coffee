@@ -114,7 +114,7 @@ checkOrigin().then (args) ->
     unzip.stderr.on 'data', -> console.log arguments
     unzip.on 'close', (code) ->
         throw 'unzip failed: ' + code if code != 0
-    def.resolve unzipTo
+        def.resolve unzipTo
     def.promise
 .then (dir) ->
     console.log 'Deleting previous type.' if !program.quiet
