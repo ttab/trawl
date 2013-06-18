@@ -19,6 +19,7 @@ program
     'http://192.168.33.10/')
 .option('-w, --www-root [path]', 'File system path to move the downloaded assets',
     '/var/scampi')
+.option('-q, --quiet', 'No output', false)
 .parse(process.argv)
 
 if program.args.length != 1
@@ -83,20 +84,22 @@ checkOrigin().then (args) ->
     [filename, file, size] = args
     upToDate = (if fs.existsSync file then (fs.statSync file).size == size)
     if upToDate
-        console.log 'Already downloaded.'
+        console.log 'Already downloaded.' if !program.quiet
         return Q(file)
     else
-        console.log 'Downloading...'
+        console.log 'Downloading...' if !program.quiet
         def = Q.defer()
-        bar = new ProgressBar('  fetching [:bar] :percent (:current/:total)',
-            {total:size, width: 40, complete:'=', incomplete:' '})
+        bar = null
+        if !program.quiet
+            bar = new ProgressBar('  fetching [:bar] :percent (:current/:total)',
+                {total:size, width: 40, complete:'=', incomplete:' '})
         opts.method = 'GET'
         http.get opts, (res) ->
             mkdirp (path.basename file)
             ws = fs.createWriteStream file, {mode:'0644'}
             rwrite = ws.write
             ws.write = (buf) ->
-                bar.tick buf.length
+                bar.tick buf.length if !program.quiet
                 rwrite.apply this, arguments
             res.pipe ws
             res.on 'end', -> req.abort(); def.resolve file
@@ -104,34 +107,33 @@ checkOrigin().then (args) ->
 .then (file) ->
     def = Q.defer()
     unzipTo = __dirname + '/target/' + classifier
-#    console.log 'Unzipping...'
-#    mkdirp unzipTo
-#    unzip = spawn 'unzip', ['-qq', '-o', file], {cwd:unzipTo}
-#    unzip.stdout.on 'data', -> console.log arguments
-#    unzip.stderr.on 'data', -> console.log arguments
-#    unzip.on 'close', (code) ->
-#        throw 'unzip failed: ' + code if code != 0
+    console.log 'Unzipping...' if !program.quiet
+    mkdirp unzipTo
+    unzip = spawn 'unzip', ['-qq', '-o', file], {cwd:unzipTo}
+    unzip.stdout.on 'data', -> console.log arguments
+    unzip.stderr.on 'data', -> console.log arguments
+    unzip.on 'close', (code) ->
+        throw 'unzip failed: ' + code if code != 0
     def.resolve unzipTo
     def.promise
 .then (dir) ->
-    console.log 'Deleting previous type.'
+    console.log 'Deleting previous type.' if !program.quiet
     (es.exec 'DELETE', index, type).then (res) ->
         if res.status == 404 or res.ok then dir
 .then (dir) ->
-    console.log 'Creating mapping.'
+    console.log 'Creating mapping.' if !program.quiet
     mapping = fs.readFileSync dir + '/mapping_' + classifier + '.json', {encoding: 'utf-8'}
     mapping = JSON.parse(mapping)
     (es.exec 'POST', index, type, '_mapping', mapping).then (res) ->
         if res.status then dir
 .then (dir) ->
-    console.log 'Uploading dump...'
+    console.log 'Uploading dump...' if !program.quiet
     dump = fs.readFileSync dir + '/dump_' + classifier + '.txt', {encoding: 'utf-8'}
     assetReplace = ahost.href.substring 0, ahost.href.length - 1
     dump = new Buffer(dump.replace /\$\$\$ASSET_HOST\$\$\$/g, assetReplace)
     (es.exec 'POST', '_bulk', dump).then (res) ->
         if res.status then dir
 .then (dir) ->
-
     console.log dir
 .done()
 
