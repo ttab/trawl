@@ -146,8 +146,12 @@ downloadAssets = ->
         queue.reduce (prev, cur) ->
             def = Q.defer()
             prev.then -> http.get cur.source, (res) ->
-                res.pipe (fs.createWriteStream cur.output, {mode:'0644'})
-                res.on 'end', -> def.resolve(); bar.tick()
+                if fs.existsSync cur.output
+                    def.resolve()
+                    bar.tick()
+                else
+                    res.pipe (fs.createWriteStream cur.output, {mode:'0644'})
+                    res.on 'end', -> def.resolve(); bar.tick()
             def.promise
         , Q()
 
