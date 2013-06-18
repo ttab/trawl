@@ -95,7 +95,7 @@ checkOrigin().then (args) ->
                 {total:size, width: 40, complete:'=', incomplete:' '})
         opts.method = 'GET'
         http.get opts, (res) ->
-            mkdirp (path.basename file)
+            mkdirp (path.dirname file)
             ws = fs.createWriteStream file, {mode:'0644'}
             rwrite = ws.write
             ws.write = (buf) ->
