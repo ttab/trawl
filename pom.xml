@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>se.prb</groupId>
+  <artifactId>scanpix-trawl</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <distributionManagement>
+    <repository>
+      <id>nexus</id>
+      <name>Nexus release repo</name>
+      <url>http://spix-core01.driften.net/nexus/content/repositories/releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>nexus-snapshots</id>
+      <name>Nexus release repo</name>
+      <url>http://spix-core01.driften.net/nexus/content/repositories/snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
+
+  <build>
+  <plugins>
+    <plugin>
+      <groupId>org.codehaus.mojo</groupId>
+      <artifactId>build-helper-maven-plugin</artifactId>
+      <version>1.7</version>
+      <executions>
+        <execution>
+          <id>attach-distribution-artifact</id>
+          <phase>package</phase>
+          <goals>
+            <goal>attach-artifact</goal>
+          </goals>
+          <configuration>
+            <artifacts>
+              <artifact>
+                <file>target/images_sgb.zip</file>
+                <type>zip</type>
+                <classifier>dist</classifier>
+              </artifact>
+            </artifacts>
+          </configuration>
+        </execution>
+      </executions>
+    </plugin>
+  </plugins>
+  </build>
+ 
+</project>
