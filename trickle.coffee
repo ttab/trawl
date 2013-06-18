@@ -102,7 +102,7 @@ checkOrigin().then (args) ->
                 bar.tick buf.length if !program.quiet
                 rwrite.apply this, arguments
             res.pipe ws
-            res.on 'end', -> req.abort(); def.resolve file
+            res.on 'end', -> def.resolve file
         return def.promise
 .then (file) ->
     def = Q.defer()
