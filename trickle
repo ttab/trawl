@@ -1,0 +1,8 @@
+#!/bin/sh
+
+
+pushd `dirname $0` > /dev/null
+SCR_PATH=`pwd -P`
+popd > /dev/null
+
+"${SCR_PATH}/node_modules/bin/coffee" "${SCR_PATH}/trickle.coffee" "$@"

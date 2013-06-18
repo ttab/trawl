@@ -115,7 +115,7 @@ bag = (hits) ->
         bar.tick()
 
 # token to insert for the asset host, replaced when installing
-# the dump using 'tickle' command
+# the dump using 'trickle' command
 rewriteAssetHost = '$$$ASSET_HOST$$$'
 todoAssets = []
 
