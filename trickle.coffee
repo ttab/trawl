@@ -110,8 +110,8 @@ checkOrigin().then (args) ->
     console.log 'Unzipping...' if !program.quiet
     mkdirp unzipTo
     unzip = spawn 'unzip', ['-qq', '-o', file], {cwd:unzipTo}
-    unzip.stdout.on 'data', -> console.log arguments
-    unzip.stderr.on 'data', -> console.log arguments
+    unzip.stdout.on 'data', (buf) -> console.log buf.toString()
+    unzip.stderr.on 'data', (buf) -> console.log buf.toString()
     unzip.on 'close', (code) ->
         throw 'unzip failed: ' + code if code != 0
         def.resolve unzipTo
