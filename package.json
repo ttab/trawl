@@ -3,7 +3,7 @@
   "dependencies": {
     "coffee-script": "~1.6.3",
     "q": "0.9.3",
-    "eslight": "*",
+    "eslight": "0.0.3",
     "bog": "0.0.4",
     "commander": "1.2.0",
     "progress": "~0.1.0",
