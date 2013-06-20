@@ -9,6 +9,7 @@ Q = require 'q'
 path = require 'path'
 querys = require 'querystring'
 spawn = require('child_process').spawn
+LineStream = require './linestream'
 
 program
 .version(pckage.version)
@@ -120,6 +121,9 @@ checkOrigin().then (args) ->
     console.log 'Deleting previous type.' if !program.quiet
     (es.exec 'DELETE', index, type).then (res) ->
         if res.status == 404 or res.ok then dir
+    .fail (err) ->
+        console.log err
+        throw err
 .then (dir) ->
     console.log 'Creating mapping.' if !program.quiet
     mapping = fs.readFileSync dir + '/mapping_' + classifier + '.json', {encoding: 'utf-8'}
@@ -128,13 +132,44 @@ checkOrigin().then (args) ->
         if res.status then dir
 .then (dir) ->
     console.log 'Uploading dump...' if !program.quiet
-    dump = fs.readFileSync dir + '/dump_' + classifier + '.txt', {encoding: 'utf-8'}
-    assetReplace = ahost.href.substring 0, ahost.href.length - 1
-    dump = new Buffer(dump.replace /\$\$\$ASSET_HOST\$\$\$/g, assetReplace)
-    (es.exec 'POST', '_bulk', dump).then (res) ->
-        if res.status then dir
+    lineSrc = new LineStream (fs.createReadStream dir + '/dump_' + classifier + '.txt')
+    assetHost = ahost.href.substring 0, ahost.href.length - 1
+    def = Q.defer()
+    hangover = null
+    consume = ->
+        (lineSrc.readPromise 1000).then (lines) ->
+            return def.resolve dir if not lines
+            lines = lines.map (line) ->
+                line = line.replace /\$\$\$ASSET_HOST\$\$\$/g, assetHost
+                new Buffer (line + '\n'), 'utf-8'
+            (lines.unshift hangover; hangover = null) if hangover
+            hangover = lines.pop() if lines.length % 2
+            if lines.length
+                buf = Buffer.concat(lines)
+                (es.exec 'POST', '_bulk', buf).then (res) ->
+                    console.error res if res.error
+                    throw new Error('Error: ' + res.error) if res.error
+                    if res.status == 200
+                        consume()
+                    else
+                        console.error res;
+                        def.reject res
+                .fail (err) ->
+                    console.error err
+                    throw err
+            else
+                console.log 'consume again'
+                consume()
+        .fail (err) ->
+            console.error err
+            def.reject err
+    consume()
+    return def.promise
 .then (dir) ->
     console.log dir
+.fail (err) ->
+    console.error err
+    throw err
 .done()
 
 #?g=se.prb&a=#{artifactName}&v=#{node['scanpix']['version']}&r=#{node['scanpix']['nexus']['repository']}&c=bin&e=zip'
