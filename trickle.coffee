@@ -43,7 +43,7 @@ ahost = url.parse program.assetHost
 
 es = new ESLight ehost
 
-nexus = 'http://spix-core01.driften.net:8081/nexus/service/local/artifact/maven/content?'
+nexus = 'http://spix-core01.driften.net/nexus/service/local/artifact/maven/content?'
 
 
 mkdirp = (dir) ->
