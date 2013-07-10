@@ -83,6 +83,8 @@ checkOrigin = ->
     req.end()
     def.promise
 
+unzipTo = null
+
 checkOrigin().then (args) ->
     [filename, file, size] = args
     upToDate = (if fs.existsSync file then (fs.statSync file).size == size)
@@ -105,7 +107,7 @@ checkOrigin().then (args) ->
                 bar.tick buf.length if !program.quiet
                 rwrite.apply this, arguments
             res.pipe ws
-            res.on 'end', -> def.resolve file
+            res.on 'end', -> console.log(); def.resolve file
         return def.promise
 .then (file) ->
     def = Q.defer()
@@ -117,30 +119,35 @@ checkOrigin().then (args) ->
     unzip.stderr.on 'data', (buf) -> console.log buf.toString()
     unzip.on 'close', (code) ->
         throw 'unzip failed: ' + code if code != 0
-        def.resolve unzipTo
+        def.resolve()
     def.promise
-.then (dir) ->
-    console.log 'Deleting previous type.' if !program.quiet
-    (es.exec 'DELETE', index, type).then (res) ->
-        if res.status == 404 or res.ok then dir
-    .fail (err) ->
-        console.log err
-        throw err
-.then (dir) ->
-    console.log 'Creating mapping.' if !program.quiet
-    mapping = fs.readFileSync dir + '/mapping_' + classifier + '.json', {encoding: 'utf-8'}
-    mapping = JSON.parse(mapping)
-    (es.exec 'POST', index, type, '_mapping', mapping).then (res) ->
-        if res.status then dir
-.then (dir) ->
+.then ->
+    console.log 'Deleting previous type (' + type + ').' if !program.quiet
+    (es.exec 'DELETE', index, type)
+.fail (err) ->
+    throw err unless err.message.indexOf('IndexMissingException') == 0
+.then ->
+    console.log 'Deleting previous index (' + index + ').' if !program.quiet
+    (es.exec 'DELETE', index)
+.fail (err) ->
+    throw err unless err.message.indexOf('IndexMissingException') == 0
+.then ->
+    console.log 'Creating new index (' + index + ').' if !program.quiet
+    (es.exec 'POST', index, {})
+#.then ->
+#    console.log 'Creating mapping for type (' + type + ').' if !program.quiet
+#    mapping = fs.readFileSync unzipTo + '/mapping_' + classifier + '.json', {encoding: 'utf-8'}
+#    mapping = JSON.parse(mapping)
+#    (es.exec 'PUT', index, type, '_mapping', mapping)
+.then ->
     console.log 'Uploading dump...' if !program.quiet
-    lineSrc = new LineStream (fs.createReadStream dir + '/dump_' + classifier + '.txt')
+    lineSrc = new LineStream (fs.createReadStream unzipTo + '/dump_' + classifier + '.txt')
     assetHost = ahost.href.substring 0, ahost.href.length - 1
     def = Q.defer()
     hangover = null
     consume = ->
         (lineSrc.readPromise 1000).then (lines) ->
-            return def.resolve dir if not lines
+            return def.resolve unzipTo if not lines
             lines = lines.map (line) ->
                 line = line.replace /\$\$\$ASSET_HOST\$\$\$/g, assetHost
                 new Buffer (line + '\n'), 'utf-8'
@@ -149,8 +156,6 @@ checkOrigin().then (args) ->
             if lines.length
                 buf = Buffer.concat(lines)
                 (es.exec 'POST', '_bulk', buf).then (res) ->
-                    console.error res if res.error
-                    throw new Error('Error: ' + res.error) if res.error
                     if res.status == 200
                         consume()
                     else
@@ -160,15 +165,14 @@ checkOrigin().then (args) ->
                     console.error err
                     throw err
             else
-                console.log 'consume again'
                 consume()
         .fail (err) ->
             console.error err
             def.reject err
     consume()
     return def.promise
-.then (dir) ->
-    console.log dir
+.then ->
+    console.log unzipTo
 .fail (err) ->
     console.error err
     throw err
