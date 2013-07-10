@@ -4,7 +4,7 @@ trawl & trickle
 ## Make test data
 
 ```
-spix-dev01$ ./trawl http://spix-bildbank01:9200/images/sgb
+spix-dev01$ ./trawl http://spix-bildbank01:9200/grafik/image
 Dumping 50 most recent entries. After that every 500th.
 Saving mapping
 Trawling through posts
@@ -13,7 +13,7 @@ Downloading assets
     assets [=======================================] 100% (720/720)
 Compressing
   archiving [=======================================] 100% (722/722)
-Written 265366585 bytes: /home/martin/trawl/target/images_sgb.zip
+Written 265366585 bytes: /home/martin/trawl/target/grafik_image.zip
 Done.
 ```
 
@@ -44,7 +44,7 @@ Uploaded: http://spix-core01.driften.net/nexus/content/repositories/snapshots/se
 *Notice that pom.xml got a hard coded value for the .zip-file and classifier to deploy to nexus*
 
 ```
-princess$ grep images_sgb pom.xml
-                <file>target/images_sgb.zip</file>
-                <classifier>images_sgb</classifier>
+princess$ grep grafik_image pom.xml
+                <file>target/grafik_image.zip</file>
+                <classifier>grafik_image</classifier>
 ```

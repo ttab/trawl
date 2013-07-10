@@ -24,13 +24,13 @@ program
 .parse(process.argv)
 
 if program.args.length != 1
-    console.error 'ERROR: Requires a index/type such as: images/sgb'
+    console.error 'ERROR: Requires a index/type such as: grafik/image'
     program.outputHelp()
     process.exit(1)
 
 split = program.args[0].split '/'
 if split.length != 2
-    console.error 'ERROR: Requires a index/type such as: images/sgb'
+    console.error 'ERROR: Requires a index/type such as: grafik/image'
     program.outputHelp()
     process.exit(1)
 
@@ -64,7 +64,7 @@ query = {
 nurl = nexus + querys.stringify(query)
 opts = url.parse nurl
 
-#scanpix-trawl-1.0.0-20130618.072327-4-images_sgb.zip
+#scanpix-trawl-1.0.0-20130618.072327-4-grafik_image.zip
 
 checkOrigin = ->
     def = Q.defer()
