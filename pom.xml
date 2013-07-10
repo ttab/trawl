@@ -36,9 +36,9 @@
           <configuration>
             <artifacts>
               <artifact>
-                <file>target/images_sgb.zip</file>
+                <file>target/grafik_image.zip</file>
                 <type>zip</type>
-                <classifier>images_sgb</classifier>
+                <classifier>grafik_image</classifier>
               </artifact>
             </artifacts>
           </configuration>
