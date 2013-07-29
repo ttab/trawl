@@ -57,30 +57,16 @@ dumpDir = __dirname + '/dump'
 outputDir = __dirname + '/target'
 mkdirp dumpDir
 mkdirp outputDir
-indexType = host.pathname.substring(1).replace('/', '_')
+[_, indexName, typeName] = host.pathname.split '/'
+indexType = indexName + '_' + typeName
 dumpFileName = 'dump_' + indexType + '.txt'
 dumpWs = fs.createWriteStream dumpDir + '/' + dumpFileName, fileOpts
-mappingFileName = 'mapping_' + indexType + '.json'
-mappingWs = fs.createWriteStream dumpDir + '/' + mappingFileName, fileOpts
+aliasFileName = 'alias_' + indexType + '.json'
 archiveFileName = indexType + '.zip'
 archiveWs = fs.createWriteStream outputDir + '/' + archiveFileName, {mode:'0644'}
 
 SIZE = 100
 bar = null
-
-mapping = ->
-    def = Q.defer()
-    console.log 'Saving mapping'
-    (es.exec host.pathname, '_mapping', {pretty:true}, null)
-    .then (res) ->
-        if res.status != 200
-            console.error "Bad response", res
-            process.exit(1)
-        delete res.status
-        mappingWs.end JSON.stringify(res) + '\n'
-        def.resolve()
-    .done()
-    def.promise
 
 trawl = ->
     def = Q.defer()
@@ -105,16 +91,40 @@ trawl = ->
     .done()
     def.promise
 
+# should contain all necessary alias after bag() has run
+alias = {}
 
 bag = (hits) ->
     hits.forEach (hit) ->
         if bar.curr < program.recent or bar.curr % program.nth == 0
+            # save potential alias
+            if hit._index != indexName and not alias[hit._index]
+                alias[hit._index] = {index:indexName}
             header = {index:{_index:hit._index,_type:hit._type,_id:hit._id}}
             dumpWs.write JSON.stringify(header)+ '\n'
             # this rewrites the asset urls
             bagAssets hit._source.assets
             dumpWs.write JSON.stringify(hit._source) + '\n'
         bar.tick()
+
+saveAlias = ->
+    console.log ''
+    def = Q.defer()
+    if Object.keys(alias).length
+        todo = Object.keys(alias).map (index) ->
+            console.log 'Retrieving mapping', index + '/' + typeName
+            (es.exec index, typeName, '_mapping', {pretty:true}, null).then (res) ->
+                if res.status != 200
+                    console.error "Bad response", res
+                    process.exit(1)
+                delete res.status
+                alias[index].mapping = res
+        Q.all(todo).then ->
+            console.log 'Saving', aliasFileName
+            aliasWs = fs.createWriteStream dumpDir + '/' + aliasFileName, fileOpts
+            aliasWs.end JSON.stringify(alias) + '\n'
+            def.resolve()
+    return def.promise
 
 # token to insert for the asset host, replaced when installing
 # the dump using 'trickle' command
@@ -138,7 +148,7 @@ bagAssets = (assets) ->
 WORKERS = 10
 
 downloadAssets = ->
-    console.log '\nDownloading assets'
+    console.log 'Downloading assets'
     bar = new ProgressBar('    assets [:bar] :percent (:current/:total)',
         {total:todoAssets.length, width: 40, complete:'=', incomplete:' '})
     perWorker = Math.ceil(todoAssets.length / WORKERS)
@@ -147,13 +157,13 @@ downloadAssets = ->
         queue = todoAssets.splice 0, perWorker
         queue.reduce (prev, cur) ->
             def = Q.defer()
-            prev.then -> http.get cur.source, (res) ->
-                if fs.existsSync cur.output
-                    def.resolve()
-                    bar.tick()
-                else
+            if fs.existsSync cur.output
+                bar.tick()
+                def.resolve()
+            else
+                prev.then -> http.get cur.source, (res) ->
                     res.pipe (fs.createWriteStream cur.output, {mode:'0644'})
-                    res.on 'end', -> def.resolve(); bar.tick()
+                    res.on 'end', -> bar.tick(); def.resolve()
             def.promise
         , Q()
 
@@ -211,8 +221,8 @@ compress = ->
     cdef.promise
 
 # workflow
-mapping()
-.then -> trawl()
+trawl()
+.then -> saveAlias()
 .then -> downloadAssets()
 .then -> compress()
 .then ->

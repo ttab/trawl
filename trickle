@@ -23,6 +23,7 @@ program
 .option('-w, --www-root [path]', 'File system path to move the downloaded assets',
     '/var/scampi')
 .option('-q, --quiet', 'No output', false)
+.option('-f, --file [file]', 'File to read dump from instead of using nexus repo', null)
 .parse(process.argv)
 
 if program.args.length != 1
@@ -86,6 +87,10 @@ checkOrigin = ->
 unzipTo = null
 
 checkOrigin().then (args) ->
+    if program.file
+        console.error 'No such file: ' + program.file if not fs.existsSync program.file
+        f = if program.file.indexOf('/') == 0 then program.file else __dirname + '/' + program.file
+        return Q(f)
     [filename, file, size] = args
     upToDate = (if fs.existsSync file then (fs.statSync file).size == size)
     if upToDate
@@ -122,23 +127,38 @@ checkOrigin().then (args) ->
         def.resolve()
     def.promise
 .then ->
-    console.log 'Deleting previous type (' + type + ').' if !program.quiet
-    (es.exec 'DELETE', index, type)
-.fail (err) ->
-    throw err unless err.message.indexOf('IndexMissingException') == 0
-.then ->
-    console.log 'Deleting previous index (' + index + ').' if !program.quiet
-    (es.exec 'DELETE', index)
-.fail (err) ->
-    throw err unless err.message.indexOf('IndexMissingException') == 0
-.then ->
-    console.log 'Creating new index (' + index + ').' if !program.quiet
-    (es.exec 'POST', index, {})
-#.then ->
-#    console.log 'Creating mapping for type (' + type + ').' if !program.quiet
-#    mapping = fs.readFileSync unzipTo + '/mapping_' + classifier + '.json', {encoding: 'utf-8'}
-#    mapping = JSON.parse(mapping)
-#    (es.exec 'PUT', index, type, '_mapping', mapping)
+    alias = fs.readFileSync unzipTo + '/alias_' + classifier + '.json', {encoding: 'utf-8'}
+    alias = JSON.parse(alias)
+    todo = Object.keys(alias).map (indexName) ->
+        console.log 'Deleting index type', indexName + '/' + type if !program.quiet
+        (es.exec 'DELETE', indexName, type).fail (err) ->
+            throw err unless err.message.indexOf('IndexMissingException') == 0
+        .then ->
+            console.log 'Deleting index', indexName if !program.quiet
+            (es.exec 'DELETE', indexName, type).fail (err) ->
+        .fail (err) ->
+            throw err unless err.message.indexOf('IndexMissingException') == 0
+        .then ->
+            console.log 'Creating new index', indexName if !program.quiet
+            (es.exec 'POST', indexName, {})
+        .then ->
+            mapping = alias[indexName].mapping
+            if not mapping then return Q()
+            console.log 'Creating type mapping', indexName + '/' + type if !program.quiet
+            (es.exec 'PUT', index, type, '_mapping', mapping)
+        .then ->
+            aliasTo = alias[indexName].index
+            if not aliasTo then return Q()
+            remove = {actions:[remove:{index:indexName,alias:aliasTo}]}
+            add = {actions:[add:{index:indexName,alias:aliasTo}]}
+            console.log 'Removing alias', aliasTo, indexName if !program.quiet
+            (es.exec 'POST', '_aliases', remove).fail (err) ->
+                console.log err
+                process.exit 0
+            .then ->
+                console.log 'Adding alias', aliasTo, indexName if !program.quiet
+                (es.exec 'POST', '_aliases', add)
+    Q.all(todo)
 .then ->
     console.log 'Uploading dump...' if !program.quiet
     lineSrc = new LineStream (fs.createReadStream unzipTo + '/dump_' + classifier + '.txt')
