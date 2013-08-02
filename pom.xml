@@ -11,12 +11,12 @@
     <repository>
       <id>nexus</id>
       <name>Nexus release repo</name>
-      <url>http://spix-core01.driften.net/nexus/content/repositories/releases/</url>
+      <url>http://repo.ad.tt.se/nexus/content/repositories/releases/</url>
     </repository>
     <snapshotRepository>
       <id>nexus-snapshots</id>
       <name>Nexus release repo</name>
-      <url>http://spix-core01.driften.net/nexus/content/repositories/snapshots/</url>
+      <url>http://repo.ad.tt.se/nexus/content/repositories/snapshots/</url>
     </snapshotRepository>
   </distributionManagement>
 
