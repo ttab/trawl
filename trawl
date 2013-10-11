@@ -201,7 +201,7 @@ compress = ->
     total = 0
     (recurse dumpDir, [], '', -> total++)
     .then ->
-        bar = new ProgressBar('  archiving [:bar] :percent (:current/:total)',
+        bar = new ProgressBar(' archiving [:bar] :percent (:current/:total)',
             {total:total, width: 40, complete:'=', incomplete:' '})
     .then ->
         recurse dumpDir, [], '', (full, path, cur, prev) ->
