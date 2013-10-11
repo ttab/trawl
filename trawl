@@ -216,8 +216,9 @@ compress = ->
         archive.finalize (err, written) ->
             throw err if err
             console.log '\nWritten', written, 'bytes:', outputDir + '/' + archiveFileName
-        archiveWs.end()
-        cdef.resolve()
+            archiveWs.end()
+            cdef.resolve()
+    .done()
     cdef.promise
 
 # workflow
@@ -227,5 +228,5 @@ trawl()
 .then -> compress()
 .then ->
     console.log 'Done.'
-    process.exit(0)
+    # process.exit(0)
 .done()
